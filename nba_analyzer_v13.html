@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NBA Edge — AI Bet Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#2a2a3a;--accent:#f0c040;--green:#4af0a0;--red:#f05050;--blue:#4a9ff0;--text:#e8e8f0;--muted:#66668080}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding:1.5rem 1rem}
+.wrap{max-width:780px;margin:0 auto}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:3px;color:var(--accent);line-height:1}
+.logo span{font-size:13px;letter-spacing:5px;color:var(--muted);display:block;margin-top:2px;font-family:'DM Sans',sans-serif;font-weight:400}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px}
+.status-pill{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);padding:6px 14px;border-radius:99px;font-size:12px;color:var(--muted);font-family:'DM Mono',monospace}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:all .3s;flex-shrink:0}
+.dot.g{background:var(--green);box-shadow:0 0 8px var(--green)}
+.dot.y{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.dot.r{background:var(--red)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.card-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem}
+.card-title.yellow{color:var(--accent)}
+.card-title.blue{color:var(--blue)}
+.row{display:flex;gap:8px;margin-bottom:.5rem}
+.inp{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;font-family:'DM Mono',monospace;outline:none;transition:border .15s}
+.inp:focus{border-color:var(--accent)}
+.inp::placeholder{color:#444460}
+.ta{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;min-height:80px;transition:border .15s;line-height:1.5}
+.ta:focus{border-color:var(--blue)}
+.ta::placeholder{color:#444460}
+.btn{padding:9px 20px;background:var(--accent);color:#000;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .15s;white-space:nowrap}
+.btn:hover{opacity:.85}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.outline{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.msg{font-size:12px;padding:7px 11px;border-radius:6px;margin-top:6px;display:none;font-family:'DM Mono',monospace;line-height:1.5}
+.msg.ok{background:rgba(74,240,160,.08);color:var(--green);border:1px solid rgba(74,240,160,.2);display:block}
+.msg.err{background:rgba(240,80,80,.08);color:var(--red);border:1px solid rgba(240,80,80,.2);display:block}
+.msg.warn{background:rgba(240,192,64,.08);color:var(--accent);border:1px solid rgba(240,192,64,.2);display:block}
+.note{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6}
+.note a{color:var(--accent);text-decoration:none}
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.7rem 1rem}
+.sl{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.sv{font-size:21px;font-weight:600;font-family:'DM Mono',monospace}
+.sv.g{color:var(--green)}.sv.y{color:var(--accent)}.sv.b{color:var(--blue)}
+.run-btn{width:100%;padding:13px;font-size:16px;font-weight:600;font-family:'Bebas Neue',sans-serif;letter-spacing:3px;background:var(--accent);color:#000;border:none;border-radius:10px;cursor:pointer;margin-bottom:1rem;transition:all .15s}
+.run-btn:hover{opacity:.9;transform:translateY(-1px)}
+.run-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:8px}
+.sec-lbl{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.filts{display:flex;gap:6px}
+.flt{font-size:11px;padding:4px 12px;border-radius:99px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.flt.on{background:var(--accent);color:#000;border-color:var(--accent)}
+.plist{display:flex;flex-direction:column;gap:14px;margin-bottom:2rem}
+.pc{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.pc.r1{border-color:var(--accent)}
+.pc.r2{border-color:rgba(74,159,240,.5)}
+.pc.r3{border-color:rgba(74,240,160,.35)}
+.pt{display:flex;justify-content:space-between;align-items:flex-start;padding:1rem 1.25rem .75rem;gap:12px}
+.pl{flex:1}
+.bdgs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.bdg{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:4px;font-family:'DM Mono',monospace}
+.bdg.b1{background:rgba(240,192,64,.15);color:var(--accent);border:1px solid rgba(240,192,64,.3)}
+.bdg.b2{background:rgba(74,159,240,.15);color:var(--blue);border:1px solid rgba(74,159,240,.3)}
+.bdg.b3{background:rgba(74,240,160,.15);color:var(--green);border:1px solid rgba(74,240,160,.3)}
+.bdg.ats{background:rgba(74,159,240,.1);color:var(--blue);border:1px solid rgba(74,159,240,.2)}
+.bdg.ov{background:rgba(74,240,160,.1);color:var(--green);border:1px solid rgba(74,240,160,.2)}
+.bdg.un{background:rgba(240,192,64,.1);color:var(--accent);border:1px solid rgba(240,192,64,.2)}
+.bdg.inj{background:rgba(240,80,80,.1);color:var(--red);border:1px solid rgba(240,80,80,.2)}
+.mup{font-size:16px;font-weight:600;margin-bottom:2px}
+.gm{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace}
+.pr{text-align:right;flex-shrink:0}
+.pline{font-family:'Bebas Neue',sans-serif;font-size:34px;color:var(--accent);line-height:1}
+.pvig{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
+.pconf{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px}
+.pb{padding:0 1.25rem 1.25rem}
+.pbet{font-size:13px;color:var(--text);margin-bottom:6px}
+.pbet strong{color:var(--accent)}
+.tgt{display:inline-block;font-size:12px;font-weight:500;padding:3px 10px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--text);margin-bottom:10px;font-family:'DM Mono',monospace}
+.ailbl{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:4px;font-weight:600}
+.aireason{font-size:13px;color:#9090b0;line-height:1.7;padding:10px 12px;background:var(--surface2);border-radius:8px;border-left:2px solid var(--blue);margin-bottom:10px}
+.crow{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px}
+.cbar{height:4px;background:var(--surface2);border-radius:99px}
+.cfill{height:100%;border-radius:99px}
+.nobet,.empty{background:var(--surface);border:2px dashed var(--border);border-radius:14px;padding:3rem;text-align:center}
+.nobet h3,.empty h3{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--muted);margin-bottom:8px}
+.nobet p,.empty p{font-size:13px;color:var(--muted);line-height:1.7;max-width:380px;margin:0 auto}
+.spin{display:inline-block;width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;margin-bottom:.75rem}
+@keyframes sp{to{transform:rotate(360deg)}}
+.loading{text-align:center;padding:3rem;color:var(--muted)}
+.loading p{font-size:13px;font-family:'DM Mono',monospace;margin-top:.5rem}
+.loading small{font-size:11px;color:#444460;display:block;margin-top:4px}
+.disc{font-size:11px;color:var(--muted);padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;line-height:1.7}
+@media(max-width:480px){.sgrid{grid-template-columns:repeat(2,1fr)}.hdr{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <div>
+    <div class="logo">NBA EDGE<span>AI Bet Analyzer · Live Lines</span></div>
+  </div>
+  <div class="status-pill">
+    <div class="dot" id="dot"></div>
+    <span id="statusTxt">Ready</span>
+  </div>
+</div>
+
+<!-- API -->
+<div class="card">
+  <div class="card-title yellow">The Odds API — Live Lines</div>
+  <div class="row">
+    <input class="inp" id="apiKey" placeholder="Your API key from the-odds-api.com" value="80a5e337e55c733c18050e82f01e29ff">
+    <button class="btn" id="loadBtn" onclick="loadGames()">Load Games</button>
+  </div>
+  <div class="note">Free key at <a href="https://the-odds-api.com" target="_blank">the-odds-api.com</a> — 500 free requests/month, no credit card needed.</div>
+  <div class="msg" id="apiMsg"></div>
+</div>
+
+<!-- OPENROUTER -->
+<div class="card">
+  <div class="card-title" style="color:#a060f0">OpenRouter — AI Analysis Key</div>
+  <div class="row">
+    <input class="inp" id="orKey" placeholder="Your OpenRouter API key — sk-or-v1-..." style="font-size:12px" value="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">
+    <button class="btn outline" onclick="window.open('https://openrouter.ai/keys','_blank')">Get Free Key</button>
+  </div>
+  <div class="note">
+    ⚠️ <strong>Important — fix your key allowlist:</strong> Go to <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a> → click your key → set <strong>Allowed Origins</strong> to <strong>*</strong> (asterisk = allow all domains). Without this the AI call will be blocked. Claude Sonnet costs ~$0.003 per analysis (less than 1 cent).
+  </div>
+</div>
+
+<!-- INJURIES -->
+<div class="card">
+  <div class="card-title blue">Today's Injury Report</div>
+  <textarea class="ta" id="injuries" placeholder="Paste key injuries from ESPN or your sportsbook. Example:&#10;Lakers — LeBron OUT (ankle), AD QUESTIONABLE&#10;Celtics — Tatum OUT (achilles)&#10;Warriors — Butler OUT (knee), Moody OUT (knee)&#10;&#10;This powers the strongest signal in the strategy."></textarea>
+  <div class="note" style="margin-top:6px">Check <a href="https://www.espn.com/nba/injuries" target="_blank">ESPN NBA Injuries</a> for today's report. Takes 2 minutes — makes a big difference.</div>
+</div>
+
+<!-- STATS -->
+<div class="sgrid">
+  <div class="sc"><div class="sl">Games today</div><div class="sv y" id="sGames">—</div></div>
+  <div class="sc"><div class="sl">Qualified picks</div><div class="sv g" id="sPicks">—</div></div>
+  <div class="sc"><div class="sl">Target win rate</div><div class="sv b">70%+</div></div>
+  <div class="sc"><div class="sl">Max picks/day</div><div class="sv">3</div></div>
+</div>
+
+<!-- RUN -->
+<button class="run-btn" id="runBtn" onclick="analyze()" disabled>LOAD GAMES FIRST</button>
+
+<!-- FILTER + LIST -->
+<div class="ph">
+  <div class="sec-lbl" id="pickLabel">Today's picks</div>
+  <div class="filts">
+    <button class="flt on" onclick="doFilt('all',this)">All</button>
+    <button class="flt" onclick="doFilt('ats',this)">ATS</button>
+    <button class="flt" onclick="doFilt('total',this)">Totals</button>
+  </div>
+</div>
+
+<div class="plist" id="plist">
+  <div class="empty"><h3>Waiting</h3><p>Load today's games, add any injuries from ESPN, then hit Analyze to get your picks.</p></div>
+</div>
+
+<div class="disc">⚠️ Lines pulled live from The Odds API (DraftKings/FanDuel). AI analysis by Claude. For informational purposes only — not financial advice. Always confirm lines on your sportsbook before placing. Bet responsibly.</div>
+
+</div>
+<script>
+// Model handled by OpenRouter
+let games = [], picks = [], cf = 'all';
+
+// ── HELPERS ──────────────────────────────────────────────
+function setDot(c, t){ document.getElementById('dot').className=`dot ${c}`; document.getElementById('statusTxt').textContent=t; }
+function msg(id, text, type){ const e=document.getElementById(id); e.textContent=text; e.className=`msg ${type}`; }
+function fmtT(utc){ try{ return new Date(utc).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZoneName:'short'}); }catch(e){ return utc; }}
+function fmtO(o){ if(o==null) return '-110'; return o>0?`+${o}`:`${o}`; }
+
+// ── LOAD GAMES ───────────────────────────────────────────
+async function loadGames(){
+  const key = document.getElementById('apiKey').value.trim();
+  if(!key){ msg('apiMsg','Enter your API key first.','err'); return; }
+
+  document.getElementById('loadBtn').disabled = true;
+  document.getElementById('loadBtn').textContent = 'Loading...';
+  setDot('y','Fetching live lines...');
+  msg('apiMsg','Connecting to The Odds API...','warn');
+
+  // The Odds API — basketball_nba covers regular season AND playoffs
+  const url = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds?regions=us&markets=h2h,spreads,totals&oddsFormat=american&apiKey=${key}`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if(!res.ok){
+      const errMsg = data.message || `HTTP ${res.status}`;
+      msg('apiMsg', `API Error: ${errMsg}`, 'err');
+      setDot('r', 'Connection failed');
+      document.getElementById('loadBtn').disabled = false;
+      document.getElementById('loadBtn').textContent = 'Retry';
+      return;
+    }
+
+    if(!Array.isArray(data) || data.length === 0){
+      msg('apiMsg', '✓ Connected but no games found right now. The NBA may be on a rest day — try again tomorrow.', 'warn');
+      setDot('y', 'No games today');
+      document.getElementById('sGames').textContent = '0';
+      document.getElementById('runBtn').textContent = 'NO GAMES TODAY';
+      document.getElementById('loadBtn').disabled = false;
+      document.getElementById('loadBtn').textContent = 'Refresh';
+      return;
+    }
+
+    // Filter to only today + upcoming games (not completed)
+    const now = new Date();
+    // window: games starting within next 36 hours
+    const cutoff = new Date(now.getTime() + 36*60*60*1000);
+    games = data.filter(g => {
+      const t = new Date(g.commence_time);
+      return t >= new Date(now.getTime() - 3*60*60*1000) && t <= cutoff;
+    });
+
+    // If nothing in 36h window, just show all available upcoming games
+    if(games.length === 0) games = data.filter(g => new Date(g.commence_time) >= now);
+    if(games.length === 0) games = data; // last resort: show everything
+
+    const remaining = res.headers.get('x-requests-remaining') || '—';
+    document.getElementById('sGames').textContent = games.length;
+    msg('apiMsg', `✓ ${games.length} NBA games loaded · ${remaining} API requests left this month`, 'ok');
+    setDot('g', `${games.length} games live`);
+
+    document.getElementById('runBtn').disabled = false;
+    document.getElementById('runBtn').textContent = `ANALYZE ${games.length} GAMES WITH AI →`;
+    document.getElementById('loadBtn').disabled = false;
+    document.getElementById('loadBtn').textContent = 'Refresh';
+
+  } catch(e) {
+    msg('apiMsg', `Network error: ${e.message}. Make sure you are on a live internet connection.`, 'err');
+    setDot('r', 'Network error');
+    document.getElementById('loadBtn').disabled = false;
+    document.getElementById('loadBtn').textContent = 'Retry';
+  }
+}
+
+// ── PARSE ODDS ───────────────────────────────────────────
+function parseOdds(g){
+  const bk = (g.bookmakers||[]);
+  const b = bk.find(b=>b.key==='draftkings') || bk.find(b=>b.key==='fanduel') || bk[0];
+  if(!b) return null;
+  let hs=null,as=null,sv=null,tot=null,tv=null,hh=null,ah=null;
+  (b.markets||[]).forEach(m=>{
+    if(m.key==='spreads'){
+      const h=m.outcomes.find(o=>o.name===g.home_team);
+      const a=m.outcomes.find(o=>o.name===g.away_team);
+      if(h){hs=h.point;sv=h.price;}
+      if(a) as=a.point;
+    }
+    if(m.key==='totals'){
+      const o=m.outcomes.find(o=>o.name==='Over');
+      if(o){tot=o.point;tv=o.price;}
+    }
+    if(m.key==='h2h'){
+      const h=m.outcomes.find(o=>o.name===g.home_team);
+      const a=m.outcomes.find(o=>o.name===g.away_team);
+      if(h) hh=h.price;
+      if(a) ah=a.price;
+    }
+  });
+  return {hs,as,sv,tot,tv,hh,ah};
+}
+
+// ── ANALYZE ──────────────────────────────────────────────
+async function analyze(){
+  if(!games.length){ msg('apiMsg','Load games first.','err'); return; }
+
+  const injuries = document.getElementById('injuries').value.trim();
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'ANALYZING WITH AI...';
+  setDot('y','Running AI analysis...');
+  document.getElementById('sPicks').textContent = '...';
+  document.getElementById('pickLabel').textContent = 'Analyzing...';
+
+  document.getElementById('plist').innerHTML = `<div class="loading"><div class="spin"></div><p>Claude is analyzing today's ${games.length} games...</p><small>Applying your 3-filter strategy to real lines</small></div>`;
+
+  // Build clean game data for Claude
+  const gameList = games.map((g,i)=>{
+    const o = parseOdds(g);
+    if(!o) return null;
+    return {
+      index: i+1,
+      matchup: `${g.away_team} @ ${g.home_team}`,
+      tipoff: fmtT(g.commence_time),
+      homeSpread: o.hs != null ? (o.hs > 0 ? `+${o.hs}` : `${o.hs}`) : 'N/A',
+      awaySpread: o.as != null ? (o.as > 0 ? `+${o.as}` : `${o.as}`) : 'N/A',
+      total: o.tot || 'N/A',
+      homeML: fmtO(o.hh),
+      awayML: fmtO(o.ah),
+      spreadVig: fmtO(o.sv),
+      totalVig: fmtO(o.tv)
+    };
+  }).filter(Boolean);
+
+  const todayDate = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+
+  const prompt = `You are a professional NBA betting analyst with 20+ years of experience and a 75% win rate. You target ~3.0 odds using a strict 3-filter strategy.
+
+YOUR STRATEGY — 3 FILTERS:
+Filter 1 (LINE VALUE): Find games where public money is likely on one side but sharp money moved the line the other way. Large spreads (7+ pts) or extreme totals (highest/lowest on slate) signal line value.
+Filter 2 (SITUATIONAL EDGE): Strongest signal = opponent missing 2+ confirmed OUT key players. Also look for: playoff/seeding motivation gaps, home court with high win probability, one team with nothing to play for.
+Filter 3 (STATISTICAL EDGE): Win gap of 15+ games, road underdog +12 or more with a real chance to cover, line movement direction.
+
+QUALIFICATION RULES:
+- Must hit at least 2 of 3 filters strongly to qualify
+- ATS picks must have 58%+ implied win probability
+- Maximum 3 picks per day — quality over quantity
+- If no game clearly qualifies: return empty picks array with explanation
+- Never force picks when edge is not there
+
+TODAY IS: ${todayDate}
+
+TODAY'S LIVE NBA GAMES AND ODDS:
+${JSON.stringify(gameList, null, 2)}
+
+INJURY REPORT PROVIDED:
+${injuries || 'None provided — factor this by checking for any known injuries in your knowledge'}
+
+TASK:
+1. Analyze every game above using ONLY the real lines shown
+2. Pick maximum 3 games that best match the strategy
+3. For each pick give the EXACT line (e.g. -8.5 ATS or Over 221.5)
+4. Be specific — reference the actual spread numbers and teams
+
+Respond ONLY in valid JSON, no markdown, no extra text:
+{
+  "date": "${todayDate}",
+  "gamesAnalyzed": ${gameList.length},
+  "picks": [
+    {
+      "matchup": "Away Team @ Home Team",
+      "tipoff": "time string",
+      "betType": "ats or total",
+      "pick": "e.g. Lakers -8.5 ATS or Over 221.5",
+      "line": "-8.5 or 221.5",
+      "vig": "-110",
+      "target": "plain english — e.g. LAL must win by 9+ points",
+      "confidence": 74,
+      "injuryEdge": true,
+      "filtersHit": ["F2A - opponent missing key players", "F1A - sharp line movement"],
+      "reason": "2-3 sentences. Reference the actual spread/total numbers. Explain exactly which filters fired and why this game qualifies."
+    }
+  ],
+  "noBetReason": "if no picks qualify explain why briefly, else empty string"
+}`;
+
+  try {
+    // Use OpenRouter — works from browser, supports Claude, no CORS issues
+    const orKey = document.getElementById('orKey').value.trim();
+    if(!orKey){ throw new Error('Please enter your OpenRouter API key above to enable AI analysis.'); }
+
+    const orKey = document.getElementById('orKey').value.trim();
+    if(!orKey){ throw new Error('OpenRouter key missing.'); }
+
+    // Try multiple CORS-friendly endpoints for OpenRouter
+    const body = JSON.stringify({
+      model: 'anthropic/claude-sonnet-4-5',
+      max_tokens: 1500,
+      messages: [{role:'user', content: prompt}]
+    });
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${orKey}`,
+      'HTTP-Referer': 'https://nba-bet-analyzer.github.io',
+      'X-Title': 'NBA Bet Analyzer',
+      'Origin': 'https://nba-bet-analyzer.github.io'
+    };
+
+    // Try direct call first (works if no allowlist), then proxy fallbacks
+    let res, data, lastErr='';
+    const endpoints = [
+      { url: 'https://openrouter.ai/api/v1/chat/completions', headers },
+      { url: `https://api.allorigins.win/raw?url=${encodeURIComponent('https://openrouter.ai/api/v1/chat/completions')}`, headers },
+      { url: 'https://corsproxy.io/?' + encodeURIComponent('https://openrouter.ai/api/v1/chat/completions'), headers }
+    ];
+
+    for(const ep of endpoints){
+      try{
+        res = await fetch(ep.url, { method:'POST', headers: ep.headers||headers, body, signal: AbortSignal.timeout(30000) });
+        data = await res.json();
+        if(res.ok && data.choices) break;
+        lastErr = data.error?.message || `HTTP ${res.status}`;
+        res = null; data = null;
+      } catch(e){ lastErr = e.message; res = null; data = null; }
+    }
+
+    if(!data || !data.choices){ throw new Error(`AI call failed: ${lastErr}. Go to openrouter.ai → Keys → edit your key → set Allowed Origins to * (allow all)`); }
+
+    const raw = (data.choices||[]).map(c=>c.message?.content||'').join('').trim();
+    const clean = raw.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+    const parsed = JSON.parse(clean);
+
+    picks = parsed.picks || [];
+    const noBetReason = parsed.noBetReason || '';
+
+    document.getElementById('sPicks').textContent = picks.length;
+    document.getElementById('pickLabel').textContent = `Today's picks — ${picks.length} qualified`;
+    setDot('g', `${picks.length} picks found`);
+    btn.disabled = false;
+    btn.textContent = `RE-ANALYZE ${games.length} GAMES →`;
+    renderPicks(noBetReason);
+
+  } catch(e) {
+    document.getElementById('plist').innerHTML = `<div class="empty"><h3>Analysis Failed</h3><p>${e.message}</p></div>`;
+    setDot('r','Analysis error');
+    btn.disabled = false;
+    btn.textContent = 'RETRY ANALYSIS →';
+    document.getElementById('sPicks').textContent = '—';
+  }
+}
+
+// ── RENDER ───────────────────────────────────────────────
+function doFilt(t, btn){
+  cf = t;
+  document.querySelectorAll('.flt').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderPicks('');
+}
+
+function renderPicks(noBetReason){
+  const el = document.getElementById('plist');
+  let list = cf==='ats' ? picks.filter(p=>p.betType==='ats') :
+             cf==='total' ? picks.filter(p=>p.betType==='total') : picks;
+
+  if(!picks.length){
+    el.innerHTML = `<div class="nobet"><h3>No Bet Today</h3><p>${noBetReason||'No games cleared the strict strategy threshold today. Skipping bad days is what protects your 70% win rate.'}</p></div>`;
+    return;
+  }
+  if(!list.length){
+    el.innerHTML = `<div class="nobet"><h3>No picks match filter</h3><p>Try a different filter above.</p></div>`;
+    return;
+  }
+
+  const rc = ['r1','r2','r3'];
+  const rb = ['b1','b2','b3'];
+  const rl = ['Best Pick','Pick 2','Pick 3'];
+
+  el.innerHTML = list.map((p,i)=>{
+    const conf = Math.min(99,Math.max(50,p.confidence||70));
+    const fc = conf>=72?'var(--green)':conf>=65?'var(--blue)':'var(--accent)';
+    const bt = p.betType==='ats'?'ats':(p.pick||'').toLowerCase().includes('over')?'ov':'un';
+    const bl = bt==='ats'?'ATS Spread':bt==='ov'?'Over':'Under';
+    const filters = (p.filtersHit||[]).join(' · ') || '';
+    return `<div class="pc ${rc[i]||''}">
+      <div class="pt">
+        <div class="pl">
+          <div class="bdgs">
+            <span class="bdg ${rb[i]||'b3'}">${rl[i]||'Pick'}</span>
+            ${p.injuryEdge?'<span class="bdg inj">Injury Edge</span>':''}
+            <span class="bdg ${bt}">${bl}</span>
+          </div>
+          <div class="mup">${p.matchup||''}</div>
+          <div class="gm">${p.tipoff||''}</div>
+        </div>
+        <div class="pr">
+          <div class="pline">${p.line||''}</div>
+          <div class="pvig">Vig ${p.vig||'-110'}</div>
+          <div class="pconf">${conf}% confidence</div>
+        </div>
+      </div>
+      <div class="pb">
+        <div class="pbet">Bet: <strong>${p.pick||''}</strong></div>
+        <div class="tgt">${p.target||''}</div>
+        ${filters?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'DM Mono',monospace">${filters}</div>`:''}
+        <div class="ailbl">AI Analysis</div>
+        <div class="aireason">${p.reason||''}</div>
+        <div class="crow"><span>Confidence</span><span>${conf}%</span></div>
+        <div class="cbar"><div class="cfill" style="width:${conf}%;background:${fc}"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Auto-load on page open — loads games then auto-analyzes
+window.addEventListener('load', async ()=>{
+  await new Promise(r=>setTimeout(r,500));
+  await loadGames();
+});
+
+// After loadGames sets runBtn enabled, auto-trigger analysis
+const _origLoadGames = loadGames;
+loadGames = async function(){
+  await _origLoadGames();
+  // auto-analyze if games loaded successfully
+  const btn = document.getElementById('runBtn');
+  if(btn && !btn.disabled && games.length > 0){
+    setTimeout(analyze, 600);
+  }
+};
+</script>
+</body>
+</html>
